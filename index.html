@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<title>Kim Milyoner Olmak İster</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<style>
+body{margin:0;font-family:Arial;background:#0b0d27;color:#fff}
+.container{max-width:900px;margin:auto;padding:15px;text-align:center}
+#startScreen{margin-top:120px}
+#timer{font-size:32px;color:#ffd700}
+#question{font-size:22px;margin:15px 0}
+.answers button{
+ width:100%;margin:6px 0;padding:12px;font-size:16px;
+ background:#2d2f55;color:#fff;border:none;border-radius:8px
+}
+.correct{background:#00a84f!important}
+.wrong{background:#d62828!important}
+#jokers button{margin:4px;padding:6px 10px;font-size:12px}
+#jokers button.used{opacity:.4;pointer-events:none}
+#money{margin-top:15px;background:#1a1c3a;padding:10px;border-radius:8px;text-align:left}
+.money-step.active{background:#ffd700;color:#000}
+.money-step.passed{background:#00a84f;color:#000}
+</style>
+</head>
+
+<body>
+<div class="container">
+
+<div id="startScreen">
+<h1>Kim Milyoner Olmak İster</h1>
+<button onclick="startGame()" style="padding:15px 30px;font-size:18px">BAŞLA</button>
+</div>
+
+<div id="gameScreen" style="display:none">
+<div id="timer">45</div>
+<div id="question"></div>
+<div class="answers" id="answers"></div>
+
+<div id="jokers">
+<button id="j50" onclick="useJoker('j50',joker5050)">50:50</button>
+<button id="jAud" onclick="useJoker('jAud',jokerAudience)">Seyirci</button>
+<button id="jTel" onclick="useJoker('jTel',jokerPhone)">Telefon</button>
+<button id="jDouble" onclick="useJoker('jDouble',jokerDouble)">Çift</button>
+<button id="jTime" onclick="useJoker('jTime',jokerTime)">Süre</button>
+<button id="jChange" onclick="useJoker('jChange',jokerChange)">Değiştir</button>
+<button id="jRemove" onclick="useJoker('jRemove',jokerRemove)">Ele</button>
+</div>
+
+<div id="money"></div>
+</div>
+</div>
+
+<audio id="correctSound" src="correct.mp3"></audio>
+<audio id="wrongSound" src="wrong.mp3"></audio>
+
+<script>
+// ================== SORULAR ==================
+// 👉 BURAYA KENDİ 120 SORULUK pool DİZİNİNİ AYNEN KOY
+const pool = [
+{q:"İnsan kalbi günde ortalama kaç kez atar?",a:["50.000","70.000","100.000","150.000"],c:1},
+{q:"Türkiye'nin para birimi nedir?",a:["Dinar","Euro","Lira","Sterlin"],c:2},
+{q:"En hızlı kara hayvanı hangisidir?",a:["Aslan","Çita","At","Kaplan"],c:1},
+{q:"İnsan vücudunda kaç kemik vardır?",a:["196","206","216","226"],c:1},
+{q:"Dünyanın en büyük memelisi hangisidir?",a:["Fil","Balina","Zürafa","Gergedan"],c:1},
+{q:"Hangi gezegen halkalarıyla ünlüdür?",a:["Mars","Venüs","Satürn","Uranüs"],c:2},
+{q:"Türkiye'nin en uzun sahil şeridi hangi bölgededir?",a:["Ege","Akdeniz","Karadeniz","Marmara"],c:2},
+{q:"Atatürk'ün doğduğu şehir neresidir?",a:["İstanbul","Selanik","Ankara","Manastır"],c:1},
+{q:"İnsan gözünde hangi renk daha zor ayırt edilir?",a:["Kırmızı","Yeşil","Mavi","Sarı"],c:2},
+{q:"Dünyanın çevresi yaklaşık kaç km'dir?",a:["20.000","30.000","40.000","50.000"],c:2},
+
+{q:"Türkiye'nin en yüksek şelalesi hangisidir?",a:["Manavgat","Tortum","Muradiye","Kapuzbaşı"],c:3},
+{q:"Hangisi bir programlama dili değildir?",a:["Python","Java","HTML","C++"],c:2},
+{q:"İnsan vücudunda en çok bulunan element hangisidir?",a:["Oksijen","Karbon","Hidrojen","Azot"],c:0},
+{q:"Dünyanın en kalabalık şehri hangisidir?",a:["Tokyo","New York","Londra","Pekin"],c:0},
+{q:"Türkiye'de kaç il vardır?",a:["79","80","81","82"],c:2},
+{q:"Işık hızı yaklaşık kaç km/s'dir?",a:["150.000","200.000","300.000","450.000"],c:2},
+{q:"En çok konuşulan dil hangisidir?",a:["İngilizce","İspanyolca","Çince","Arapça"],c:2},
+{q:"İlk yazıyı hangi uygarlık bulmuştur?",a:["Mısır","Hitit","Sümer","Frig"],c:2},
+{q:"Dünyanın en büyük kıtası hangisidir?",a:["Afrika","Avrupa","Asya","Amerika"],c:2},
+{q:"Hangi hayvan memeli değildir?",a:["Yarasa","Yunus","Balina","Penguen"],c:3},
+
+{q:"Türkiye'nin en büyük gölü hangisidir?",a:["Tuz","Van","Beyşehir","Eğirdir"],c:1},
+{q:"Bir yılda kaç ay vardır?",a:["10","11","12","13"],c:2},
+{q:"Hangi spor dalında file yoktur?",a:["Tenis","Voleybol","Badminton","Basketbol"],c:3},
+{q:"En çok kullanılan arama motoru hangisidir?",a:["Yahoo","Bing","Google","Yandex"],c:2},
+{q:"İnsan DNA'sı yüzde kaç oranında aynıdır?",a:["90","95","98","99"],c:3},
+{q:"Dünyanın en sıcak gezegeni hangisidir?",a:["Merkür","Venüs","Mars","Jüpiter"],c:1},
+{q:"Türkiye'nin en batı noktası neresidir?",a:["Çanakkale","Edirne","İzmir","Tekirdağ"],c:1},
+{q:"Bir üçgenin iç açıları toplamı kaç derecedir?",a:["90","180","270","360"],c:1},
+{q:"En küçük asal sayı hangisidir?",a:["0","1","2","3"],c:2},
+{q:"Hangi meyve sarı renklidir?",a:["Elma","Muz","Kiraz","Üzüm"],c:1},
+
+{q:"Türkiye'nin en büyük adası hangisidir?",a:["Bozcaada","Gökçeada","Marmara","Avşa"],c:1},
+{q:"İlk televizyon hangi ülkede icat edilmiştir?",a:["Almanya","ABD","İngiltere","Fransa"],c:0},
+{q:"Hangi gezegen Güneş'e en yakındır?",a:["Venüs","Mars","Merkür","Dünya"],c:2},
+{q:"İnsan vücudunda kaç diş vardır?",a:["28","30","32","34"],c:2},
+{q:"Türkiye'nin en büyük barajı hangisidir?",a:["Atatürk","Keban","Karatepe","Hirfanlı"],c:0},
+{q:"Hangi hayvan uçamaz?",a:["Kartal","Serçe","Yarasa","Penguen"],c:3},
+{q:"Dünyanın en büyük denizi hangisidir?",a:["Karadeniz","Akdeniz","Hazar","Kızıldeniz"],c:2},
+{q:"Hangi ülke Avrupa'da değildir?",a:["Almanya","Fransa","Japonya","İtalya"],c:2},
+{q:"Bir saatte kaç dakika vardır?",a:["30","45","60","90"],c:2},
+{q:"Türkiye'nin milli çiçeği hangisidir?",a:["Lale","Gül","Papatya","Karanfil"],c:0}
+const pool = [
+{q:"Türkiye'nin başkenti hangisidir?",a:["İstanbul","Ankara","İzmir","Bursa"],c:1},
+{q:"Dünyanın en büyük okyanusu hangisidir?",a:["Atlantik","Hint","Pasifik","Arktik"],c:2},
+{q:"En uzun nehir hangisidir?",a:["Nil","Amazon","Tuna","Fırat"],c:0},
+{q:"Ay’a ilk ayak basan insan kimdir?",a:["Aldrin","Armstrong","Gagarin","Collins"],c:1},
+{q:"İstiklal Marşı'nın yazarı kimdir?",a:["Mehmet Akif","Nazım Hikmet","Ziya Gökalp","Yahya Kemal"],c:0},
+{q:"Dünyanın en yüksek dağı hangisidir?",a:["K2","Everest","Makalu","Lhotse"],c:1},
+{q:"Türkiye kaç coğrafi bölgeden oluşur?",a:["5","6","7","8"],c:2},
+{q:"Su kaç derecede donar?",a:["0","10","-10","5"],c:0},
+{q:"Osmanlı Devleti hangi yılda kurulmuştur?",a:["1299","1453","1071","1302"],c:0},
+{q:"Güneş sisteminin en büyük gezegeni hangisidir?",a:["Mars","Jüpiter","Satürn","Venüs"],c:1},
+
+{q:"DNA'nın yapısını kim keşfetmiştir?",a:["Newton","Einstein","Watson-Crick","Tesla"],c:2},
+{q:"İlk Türk alfabesi hangisidir?",a:["Arap","Göktürk","Latin","Uygur"],c:1},
+{q:"Türkiye'nin en kalabalık ili hangisidir?",a:["Ankara","İstanbul","İzmir","Bursa"],c:1},
+{q:"H2O nedir?",a:["Oksijen","Hidrojen","Su","Asit"],c:2},
+{q:"Ampulü kim icat etmiştir?",a:["Tesla","Edison","Bell","Newton"],c:1},
+{q:"Dünyaya en yakın gezegen hangisidir?",a:["Mars","Venüs","Merkür","Jüpiter"],c:2},
+{q:"Cumhuriyet hangi yıl ilan edilmiştir?",a:["1919","1920","1923","1927"],c:2},
+{q:"Kızıl Gezegen olarak bilinen gezegen hangisidir?",a:["Mars","Venüs","Merkür","Jüpiter"],c:0},
+{q:"En sert doğal madde hangisidir?",a:["Altın","Demir","Elmas","Gümüş"],c:2},
+{q:"İnsan vücudundaki en büyük organ hangisidir?",a:["Kalp","Karaciğer","Deri","Akciğer"],c:2},
+
+{q:"FIFA Dünya Kupası'nı en çok kazanan ülke hangisidir?",a:["Almanya","Arjantin","Brezilya","İtalya"],c:2},
+{q:"Basketbolda bir maç kaç dakikadır (NBA)?",a:["40","45","48","60"],c:2},
+{q:"Olimpiyatlar kaç yılda bir yapılır?",a:["2","3","4","5"],c:2},
+{q:"Galatasaray'ın kuruluş yılı?",a:["1903","1905","1907","1911"],c:1},
+{q:"Futbolda hat-trick ne demektir?",a:["3 asist","3 gol","3 faul","3 maç"],c:1},
+{q:"Teniste 0 puan ne olarak adlandırılır?",a:["Zero","Love","Null","None"],c:1},
+{q:"NBA logosundaki silüet kimdir?",a:["Jordan","West","Bryant","Curry"],c:1},
+{q:"Formula 1'de kırmızı bayrak ne anlama gelir?",a:["Yarış bitti","Yarış durdu","Ceza","Pit"],c:1},
+{q:"Beşiktaş'ın simgesindeki hayvan nedir?",a:["Kartal","Aslan","Kaplan","Şahin"],c:0},
+{q:"Türkiye Süper Ligi kaç takımla oynanır?",a:["16","18","20","21"],c:1},
+
+{q:"Dünyanın en büyük çölü hangisidir?",a:["Sahra","Gobi","Antarktika","Arabistan"],c:2},
+{q:"Ekvator hangi iki yarım küreyi ayırır?",a:["Doğu-Batı","Kuzey-Güney","Asya-Avrupa","Kara-Deniz"],c:1},
+{q:"En kalabalık ülke hangisidir?",a:["Hindistan","ABD","Çin","Rusya"],c:2},
+{q:"Avrupa Birliği'nin merkezi nerededir?",a:["Paris","Berlin","Brüksel","Roma"],c:2},
+{q:"Dünyanın en uzun duvarı hangisidir?",a:["Berlin","Çin Seddi","Hadrian","Truva"],c:1},
+{q:"Türkiye'nin en uzun nehri hangisidir?",a:["Fırat","Kızılırmak","Dicle","Sakarya"],c:1},
+{q:"En büyük ada hangisidir?",a:["Borneo","Grönland","Madagaskar","Yeni Gine"],c:1},
+{q:"Boğaziçi Köprüsü hangi şehirde?",a:["Ankara","İzmir","İstanbul","Bursa"],c:2},
+{q:"Dünyanın en derin noktası neresidir?",a:["Mariana","Atlas","Pasifik","Hint"],c:0},
+{q:"Türkiye'nin yüzölçümü en büyük ili hangisidir?",a:["Konya","Ankara","Sivas","Antalya"],c:0},
+
+{q:"İlk bilgisayarın adı nedir?",a:["IBM","ENIAC","Apple I","Unix"],c:1},
+{q:"WWW'nin mucidi kimdir?",a:["Jobs","Gates","Berners-Lee","Zuckerberg"],c:2},
+{q:"İlk iPhone hangi yıl çıktı?",a:["2005","2007","2009","2010"],c:1},
+{q:"Google hangi yıl kuruldu?",a:["1995","1998","2000","2003"],c:1},
+{q:"USB'nin açılımı nedir?",a:["Universal Serial Bus","United System Base","Ultra Speed Byte","Universal System Block"],c:0},
+{q:"Windows işletim sistemi kime aittir?",a:["Apple","IBM","Microsoft","Google"],c:2},
+{q:"Android hangi firmaya aittir?",a:["Samsung","Apple","Google","Huawei"],c:2},
+{q:"İlk sosyal medya sitesi hangisidir?",a:["Facebook","MySpace","Twitter","Instagram"],c:1},
+{q:"YouTube hangi yıl kuruldu?",a:["2003","2005","2007","2009"],c:1},
+{q:"Tesla'nın kurucusu kimdir?",a:["Jobs","Musk","Gates","Bezos"],c:1},
+
+{q:"Harry Potter yazarı kimdir?",a:["Tolkien","Rowling","Lewis","Martin"],c:1},
+{q:"Yüzüklerin Efendisi yazarı kimdir?",a:["Rowling","Tolkien","Martin","King"],c:1},
+{q:"Titanic filmi hangi yıl çıktı?",a:["1995","1997","1999","2001"],c:1},
+{q:"Oscar ödülleri hangi ülkede verilir?",a:["İngiltere","Fransa","ABD","Almanya"],c:2},
+{q:"En çok Oscar alan film hangisidir?",a:["Titanic","Avatar","Ben-Hur","Gladyatör"],c:0},
+{q:"Matrix filmindeki ana karakter?",a:["Neo","Morpheus","Smith","Trinity"],c:0},
+{q:"Star Wars'daki kötü karakter?",a:["Yoda","Luke","Vader","Han"],c:2},
+{q:"Marvel evreninde Thor'un silahı?",a:["Stormbreaker","Mjolnir","Excalibur","Axe"],c:1},
+{q:"Batman hangi şehirde yaşar?",a:["Metropolis","Gotham","Star City","Central"],c:1},
+{q:"Joker karakterinin düşmanı kimdir?",a:["Superman","Batman","Spiderman","Iron Man"],c:1}
+];
+
+// ================== AYARLAR ==================
+const moneySteps=["500","1.000","5.000","10.000","25.000","50.000","100.000","250.000","500.000","750.000","1.000.000"];
+let questions=[],current=0,time=45,timer;
+let used={},doubleAnswer=false;
+
+const startScreen=document.getElementById("startScreen");
+const gameScreen=document.getElementById("gameScreen");
+const qEl=document.getElementById("question");
+const aEl=document.getElementById("answers");
+const tEl=document.getElementById("timer");
+const mEl=document.getElementById("money");
+
+// ================== ŞIK KARIŞTIRMA ==================
+function shuffleAnswers(question){
+ let arr = question.a.map((text,index)=>({
+  text,
+  isCorrect: index === question.c
+ }));
+
+ for(let i=arr.length-1;i>0;i--){
+  const j=Math.floor(Math.random()*(i+1));
+  [arr[i],arr[j]]=[arr[j],arr[i]];
+ }
+
+ question.a = arr.map(x=>x.text);
+ question.c = arr.findIndex(x=>x.isCorrect);
+}
+
+// ================== OYUN ==================
+function startGame(){
+ startScreen.style.display="none";
+ gameScreen.style.display="block";
+ questions=[...pool].sort(()=>0.5-Math.random()).slice(0,11);
+ current=0; used={}; doubleAnswer=false;
+ document.querySelectorAll("#jokers button").forEach(b=>b.classList.remove("used"));
+ loadQuestion();
+}
+
+function resetGame(){
+ clearInterval(timer);
+ gameScreen.style.display="none";
+ startScreen.style.display="block";
+}
+
+function renderMoney(){
+ mEl.innerHTML="";
+ moneySteps.forEach((m,i)=>{
+  let d=document.createElement("div");
+  d.textContent=(i+1)+". "+m+" TL";
+  d.className="money-step";
+  if(i<current)d.classList.add("passed");
+  if(i===current)d.classList.add("active");
+  mEl.appendChild(d);
+ });
+}
+
+function startTimer(){
+ clearInterval(timer);
+ time=45; tEl.textContent=time;
+ timer=setInterval(()=>{
+  time--; tEl.textContent=time;
+  if(time<=0) answer(false,null);
+ },1000);
+}
+
+function loadQuestion(){
+ shuffleAnswers(questions[current]); // 🔀 ŞIKLAR RANDOM
+ renderMoney();
+ aEl.innerHTML="";
+ qEl.textContent=questions[current].q;
+
+ questions[current].a.forEach((t,i)=>{
+  let b=document.createElement("button");
+  b.textContent=t;
+  b.onclick=()=>answer(i===questions[current].c,b);
+  aEl.appendChild(b);
+ });
+ startTimer();
+}
+
+function answer(correct,btn){
+ clearInterval(timer);
+
+ if(correct){
+  btn.classList.add("correct");
+  correctSound.play();
+  setTimeout(()=>{
+   current++;
+   if(current>=questions.length) resetGame();
+   else loadQuestion();
+  },3000);
+ }else{
+  if(doubleAnswer){
+   doubleAnswer=false;
+   btn.disabled=true;
+   return;
+  }
+  btn.classList.add("wrong");
+  wrongSound.play();
+  setTimeout(resetGame,3000);
+ }
+}
+
+// ================== JOKER SİSTEMİ ==================
+function useJoker(id,fn){
+ if(used[id]) return;
+ used[id]=true;
+ document.getElementById(id).classList.add("used");
+ fn();
+}
+
+function joker5050(){
+ const c=questions[current].c;
+ let r=0;
+ document.querySelectorAll(".answers button").forEach((b,i)=>{
+  if(i!==c && r<2){b.style.display="none";r++;}
+ });
+}
+
+function jokerAudience(){
+ const c=questions[current].c;
+ alert(
+  "Seyirci oyları:\n"+
+  questions[current].a.map((x,i)=>(i===c?"%70 ":"%10 ")+x).join("\n")
+ );
+}
+
+function jokerPhone(){
+ alert("Telefon jokeri:\nCevap: "+questions[current].a[questions[current].c]);
+}
+
+function jokerDouble(){
+ doubleAnswer=true;
+ alert("Çift cevap aktif. Bir yanlış hakkın var.");
+}
+
+function jokerTime(){
+ time+=15;
+ tEl.textContent=time;
+}
+
+function jokerChange(){
+ clearInterval(timer);
+ let next;
+ do{ next=Math.floor(Math.random()*questions.length); }
+ while(next===current);
+ current=next;
+ loadQuestion();
+}
+
+function jokerRemove(){
+ const btns=[...document.querySelectorAll(".answers button")];
+ const wrongs=btns.filter((b,i)=>i!==questions[current].c && !b.disabled);
+ if(wrongs.length>0){
+  wrongs[Math.floor(Math.random()*wrongs.length)].disabled=true;
+ }
+}
+</script>
+</body>
+</html>
